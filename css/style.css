@@ -288,7 +288,7 @@ button {
 
 .hero-main {
   display: grid;
-  grid-template-columns: 1fr 180px;
+  grid-template-columns: 1fr 320px;
   gap: 34px;
   align-items: start;
 }
@@ -325,6 +325,7 @@ button {
   align-items: center;
   justify-content: center;
   perspective: 1200px;
+  transform: scale(1.7);
 }
 
 .chip3d-board {
@@ -1592,6 +1593,11 @@ button {
   object-fit: contain;
   filter: grayscale(1) brightness(2.4);
   opacity: .92;
+}
+
+.education-mark img.no-grayscale {
+  filter: none;
+  opacity: 1;
 }
 
 .edu-card-bottom {
