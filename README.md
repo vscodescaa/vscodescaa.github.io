@@ -85,7 +85,6 @@ Se dispara automáticamente en cada push a `main`. Para activarlo:
 
 No hace falta rama `gh-pages` ni configuración adicional — el workflow ya deja `index.html` sincronizado aunque olvides correr el build localmente.
 
-## Pendientes
+## CV descargable
 
-- **CV descargable (PDF):** el botón "CV ↗" en `sections/nav.html` y el link "CV" en `sections/footer.html` están apuntando a `href="#"` como placeholder. Cuando tengas el PDF final, colócalo en `assets/cv/` y actualiza el `href`.
-- **Visual 3D del hero:** el contenedor `.hero-visual-wrap` en `sections/hero.html` está vacío — ahí va el reemplazo del antiguo ícono tipo CPU (eliminado por completo, HTML y CSS).
+El PDF vive en `assets/cv/angel-sampayo-cv.pdf`. El botón "CV ↗" del nav (`sections/nav.html`) y el link "CV" del footer (`sections/footer.html`) apuntan ahí con el atributo `download`. Para actualizarlo, reemplaza ese archivo (mismo nombre) y no hace falta tocar el HTML.
