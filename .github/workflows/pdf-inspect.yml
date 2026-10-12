@@ -22,47 +22,57 @@ jobs:
         with:
           python-version: '3.12'
 
-      - run: pip install pdfplumber
+      - run: pip install pymupdf
 
-      - name: Extract layout from original main PDF
+      - name: Inspect selected-work styling from original main PDF
         shell: bash
         run: |
           git show origin/main:assets/cv/angel-sampayo-cv.pdf > /tmp/original-cv.pdf
           python - <<'PY'
-          import pdfplumber
+          import fitz
           from pathlib import Path
 
-          src = "/tmp/original-cv.pdf"
-          out = Path("pdf-layout.txt")
-          lines = []
+          doc = fitz.open("/tmp/original-cv.pdf")
+          page = doc[0]
+          out = []
+          out.append(f"page_rect={page.rect}")
 
-          with pdfplumber.open(src) as pdf:
-              lines.append(f"pages={len(pdf.pages)}")
-              for i, page in enumerate(pdf.pages, 1):
-                  lines.append(f"\n=== PAGE {i} width={page.width} height={page.height} ===")
-                  words = page.extract_words(
-                      x_tolerance=2,
-                      y_tolerance=2,
-                      keep_blank_chars=False,
-                      use_text_flow=False,
-                      extra_attrs=["size"]
+          data = page.get_text("dict")
+          for block in data["blocks"]:
+              if block.get("type") == 0:
+                  for line in block.get("lines", []):
+                      for span in line.get("spans", []):
+                          x0,y0,x1,y1 = span["bbox"]
+                          if 520 <= y0 <= 720:
+                              out.append(
+                                  f'TEXT bbox=({x0:.1f},{y0:.1f},{x1:.1f},{y1:.1f}) '
+                                  f'font={span["font"]} size={span["size"]:.2f} '
+                                  f'color=#{span["color"]:06x} text={span["text"]}'
+                              )
+
+          out.append("\nIMAGES")
+          for img in page.get_images(full=True):
+              xref=img[0]
+              for rect in page.get_image_rects(xref):
+                  out.append(f"IMAGE xref={xref} rect={rect}")
+
+          out.append("\nDRAWINGS")
+          for d in page.get_drawings():
+              r=d.get("rect")
+              if r and r.y1 >= 520 and r.y0 <= 720:
+                  out.append(
+                      f'DRAW rect={r} fill={d.get("fill")} color={d.get("color")} '
+                      f'width={d.get("width")} type={d.get("type")}'
                   )
-                  words = sorted(words, key=lambda w: (round(w["top"],1), w["x0"]))
-                  for w in words:
-                      txt = w["text"].replace("\n", " ")
-                      lines.append(
-                          f'top={w["top"]:.1f} bottom={w["bottom"]:.1f} '
-                          f'x0={w["x0"]:.1f} x1={w["x1"]:.1f} size={w.get("size",0):.1f} text={txt}'
-                      )
 
-          out.write_text("\n".join(lines), encoding="utf-8")
+          Path("pdf-style.txt").write_text("\n".join(out), encoding="utf-8")
           PY
 
-      - name: Commit layout dump
+      - name: Commit style dump
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pdf-layout.txt
-          git commit -m "chore: inspect original CV layout [skip ci]"
+          git add pdf-style.txt
+          git commit -m "chore: inspect original CV style [skip ci]"
           git push origin HEAD:feature/add-yoru-to-cv
