@@ -1,4 +1,4 @@
-name: Inspect original CV PDF
+name: Patch original CV PDF
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  inspect:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,55 +24,85 @@ jobs:
 
       - run: pip install pymupdf
 
-      - name: Inspect selected-work styling from original main PDF
+      - name: Add YORU KR-7 to original CV without redesigning it
         shell: bash
         run: |
           git show origin/main:assets/cv/angel-sampayo-cv.pdf > /tmp/original-cv.pdf
           python - <<'PY'
           import fitz
-          from pathlib import Path
 
-          doc = fitz.open("/tmp/original-cv.pdf")
+          src = "/tmp/original-cv.pdf"
+          out = "assets/cv/angel-sampayo-cv.pdf"
+          demo = "https://vscodescaa.github.io/yoru-kr7/"
+
+          doc = fitz.open(src)
           page = doc[0]
-          out = []
-          out.append(f"page_rect={page.rect}")
 
-          data = page.get_text("dict")
-          for block in data["blocks"]:
-              if block.get("type") == 0:
-                  for line in block.get("lines", []):
-                      for span in line.get("spans", []):
-                          x0,y0,x1,y1 = span["bbox"]
-                          if 520 <= y0 <= 720:
-                              out.append(
-                                  f'TEXT bbox=({x0:.1f},{y0:.1f},{x1:.1f},{y1:.1f}) '
-                                  f'font={span["font"]} size={span["size"]:.2f} '
-                                  f'color=#{span["color"]:06x} text={span["text"]}'
-                              )
+          # The original CV has a black portfolio panel in the lower-left.
+          # Use its existing negative-space area, leaving every original
+          # element untouched and adding only this compact project callout.
+          white = (1, 1, 1)
+          muted = (0.72, 0.74, 0.76)
+          accent = (0.72, 0.82, 0.95)
 
-          out.append("\nIMAGES")
-          for img in page.get_images(full=True):
-              xref=img[0]
-              for rect in page.get_image_rects(xref):
-                  out.append(f"IMAGE xref={xref} rect={rect}")
+          page.insert_text(
+              (34, 674),
+              "YORU KR-7",
+              fontsize=8.5,
+              fontname="hebo",
+              color=white,
+              overlay=True,
+          )
+          page.insert_text(
+              (34, 687),
+              "Interactive WebGL automotive experience",
+              fontsize=5.2,
+              fontname="helv",
+              color=muted,
+              overlay=True,
+          )
+          page.insert_text(
+              (34, 699),
+              "Three.js / WebGL / GSAP / Vite",
+              fontsize=5.5,
+              fontname="helv",
+              color=white,
+              overlay=True,
+          )
+          page.insert_text(
+              (34, 712),
+              "View interactive demo ->",
+              fontsize=5.3,
+              fontname="hebo",
+              color=accent,
+              overlay=True,
+          )
 
-          out.append("\nDRAWINGS")
-          for d in page.get_drawings():
-              r=d.get("rect")
-              if r and r.y1 >= 520 and r.y0 <= 720:
-                  out.append(
-                      f'DRAW rect={r} fill={d.get("fill")} color={d.get("color")} '
-                      f'width={d.get("width")} type={d.get("type")}'
-                  )
+          page.insert_link({
+              "kind": fitz.LINK_URI,
+              "from": fitz.Rect(32, 703, 111, 717),
+              "uri": demo,
+          })
 
-          Path("pdf-style.txt").write_text("\n".join(out), encoding="utf-8")
+          doc.set_metadata({
+              **doc.metadata,
+              "modDate": "",
+          })
+          doc.save(out, garbage=4, deflate=True)
+          doc.close()
           PY
 
-      - name: Commit style dump
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corrected-cv-preview
+          path: assets/cv/angel-sampayo-cv.pdf
+          if-no-files-found: error
+
+      - name: Commit corrected PDF
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pdf-style.txt
-          git commit -m "chore: inspect original CV style [skip ci]"
+          git add assets/cv/angel-sampayo-cv.pdf
+          git commit -m "fix: preserve original CV and add YORU KR-7 [skip ci]"
           git push origin HEAD:feature/add-yoru-to-cv
