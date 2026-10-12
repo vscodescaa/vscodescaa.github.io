@@ -1,0 +1,68 @@
+name: Inspect original CV PDF
+
+on:
+  push:
+    branches:
+      - feature/add-yoru-to-cv
+    paths:
+      - .github/workflows/pdf-inspect.yml
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install pdfplumber
+
+      - name: Extract layout from original main PDF
+        shell: bash
+        run: |
+          git show origin/main:assets/cv/angel-sampayo-cv.pdf > /tmp/original-cv.pdf
+          python - <<'PY'
+          import pdfplumber
+          from pathlib import Path
+
+          src = "/tmp/original-cv.pdf"
+          out = Path("pdf-layout.txt")
+          lines = []
+
+          with pdfplumber.open(src) as pdf:
+              lines.append(f"pages={len(pdf.pages)}")
+              for i, page in enumerate(pdf.pages, 1):
+                  lines.append(f"\n=== PAGE {i} width={page.width} height={page.height} ===")
+                  words = page.extract_words(
+                      x_tolerance=2,
+                      y_tolerance=2,
+                      keep_blank_chars=False,
+                      use_text_flow=False,
+                      extra_attrs=["size"]
+                  )
+                  words = sorted(words, key=lambda w: (round(w["top"],1), w["x0"]))
+                  for w in words:
+                      txt = w["text"].replace("\n", " ")
+                      lines.append(
+                          f'top={w["top"]:.1f} bottom={w["bottom"]:.1f} '
+                          f'x0={w["x0"]:.1f} x1={w["x1"]:.1f} size={w.get("size",0):.1f} text={txt}'
+                      )
+
+          out.write_text("\n".join(lines), encoding="utf-8")
+          PY
+
+      - name: Commit layout dump
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pdf-layout.txt
+          git commit -m "chore: inspect original CV layout [skip ci]"
+          git push origin HEAD:feature/add-yoru-to-cv
