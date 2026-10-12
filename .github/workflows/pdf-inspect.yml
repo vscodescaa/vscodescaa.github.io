@@ -46,15 +46,15 @@ jobs:
           accent = (0.72, 0.82, 0.95)
 
           page.insert_text(
-              (34, 674),
+              (58, 674),
               "YORU KR-7",
               fontsize=8.5,
               fontname="hebo",
-              color=white,
+              color=dark,
               overlay=True,
           )
           page.insert_text(
-              (34, 687),
+              (58, 687),
               "Interactive WebGL automotive experience",
               fontsize=5.2,
               fontname="helv",
@@ -62,7 +62,7 @@ jobs:
               overlay=True,
           )
           page.insert_text(
-              (34, 699),
+              (58, 699),
               "Three.js / WebGL / GSAP / Vite",
               fontsize=5.5,
               fontname="helv",
@@ -70,7 +70,7 @@ jobs:
               overlay=True,
           )
           page.insert_text(
-              (34, 712),
+              (58, 712),
               "View interactive demo ->",
               fontsize=5.3,
               fontname="hebo",
@@ -80,7 +80,7 @@ jobs:
 
           page.insert_link({
               "kind": fitz.LINK_URI,
-              "from": fitz.Rect(32, 703, 111, 717),
+              "from": fitz.Rect(56, 703, 135, 717),
               "uri": demo,
           })
 
