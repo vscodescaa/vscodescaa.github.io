@@ -38,12 +38,12 @@ jobs:
           doc = fitz.open(src)
           page = doc[0]
 
-          # The original CV has a black portfolio panel in the lower-left.
-          # Use its existing negative-space area, leaving every original
-          # element untouched and adding only this compact project callout.
-          white = (1, 1, 1)
-          muted = (0.72, 0.74, 0.76)
-          accent = (0.72, 0.82, 0.95)
+          # Preserve the entire original PDF. Add only a compact YORU callout
+          # in the existing whitespace between Selected Work and Portfolio.
+          dark = (0.071, 0.071, 0.071)       # #121212
+          muted = (0.369, 0.376, 0.392)     # #5e6064
+          soft = (0.565, 0.573, 0.592)      # #909297
+          accent = (0.286, 0.388, 0.522)    # #496385
 
           page.insert_text(
               (58, 674),
@@ -58,7 +58,7 @@ jobs:
               "Interactive WebGL automotive experience",
               fontsize=5.2,
               fontname="helv",
-              color=muted,
+              color=soft,
               overlay=True,
           )
           page.insert_text(
@@ -66,7 +66,7 @@ jobs:
               "Three.js / WebGL / GSAP / Vite",
               fontsize=5.5,
               fontname="helv",
-              color=white,
+              color=muted,
               overlay=True,
           )
           page.insert_text(
@@ -80,14 +80,11 @@ jobs:
 
           page.insert_link({
               "kind": fitz.LINK_URI,
-              "from": fitz.Rect(56, 703, 135, 717),
+              "from": fitz.Rect(56, 703, 138, 718),
               "uri": demo,
           })
 
-          doc.set_metadata({
-              **doc.metadata,
-              "modDate": "",
-          })
+          doc.set_metadata({**doc.metadata, "modDate": ""})
           doc.save(out, garbage=4, deflate=True)
           doc.close()
           PY
